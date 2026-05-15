@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}ML.TRADE — Financial Analysis Trading Bot{% endblock %}
+
+{% block content %}
+{# ── Hero: styled backtest metrics in the landing panel ── #}
+{% if backtest %}
+<section class="hero">
+  <aside class="hero__rail" aria-hidden="true">
+    <a class="hero__rail-icon" href="/portfolio/" aria-label="Portfolio grid">
+      <span></span><span></span><span></span><span></span>
+    </a>
+    <span class="hero__rail-label">ML.TRADE&nbsp;·&nbsp;EDITION&nbsp;01</span>
+  </aside>
+  <div class="hero__panel hero__panel--gradient">
+    <p class="eyebrow">ML.TRADE / 2026</p>
+    <h1 class="headline">
+      <span class="headline__mark">YOUR OWN</span><span class="headline__word">FINANCIAL ANALYSIS BOT</span>
+    </h1>
+    <p class="subcopy">
+      Tournament-selected LSTM + RF + XGBoost ensemble, gated by HMM regime
+      and optional sentiment signals. DSR-adjusted, walk-forward validated.
+    </p>
+  </div>
+  <div class="hero__panel hero__panel--dark">
+    <div class="hero__metrics">
+      <p class="eyebrow">Portfolio Performance</p>
+      <div class="hero-metric-grid">
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Total Return</div>
+          <div class="metric-card__value {{ 'metric-card__value--positive' if backtest.total_return_pct >= 0 else 'metric-card__value--negative' }}">
+            {{ '%+.2f'|format(backtest.total_return_pct | default(0)) }}%
+          </div>
+        </div>
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Sharpe Ratio</div>
+          <div class="metric-card__value {{ 'metric-card__value--positive' if backtest.sharpe_ratio | default(0) > 0 else 'metric-card__value--negative' }}">
+            {{ '%.2f'|format(backtest.sharpe_ratio | default(0)) }}
+          </div>
+        </div>
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Max Drawdown</div>
+          <div class="metric-card__value metric-card__value--negative">
+            -{{ '%.2f'|format(backtest.max_drawdown_pct | default(0)) }}%
+          </div>
+        </div>
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Win Rate</div>
+          <div class="metric-card__value">
+            {{ '%.1f'|format(backtest.win_rate_pct | default(0)) }}%
+          </div>
+        </div>
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Total Trades</div>
+          <div class="metric-card__value">{{ backtest.total_trades | default(0) }}</div>
+        </div>
+        <div class="metric-card metric-card--hero">
+          <div class="metric-card__label">Reward : Risk</div>
+          <div class="metric-card__value">{{ '%.2f'|format(backtest.reward_risk | default(0)) }}</div>
+        </div>
+      </div>
+      <div class="hero-metric-detail">
+        <span>Capital: &pound;{{ backtest.initial_capital | default(10000) | comma }}</span>
+        <span>Equity: <span class="{{ 'metric-card__value--positive' if backtest.final_equity | default(0) >= backtest.initial_capital | default(10000) else 'metric-card__value--negative' }}">&pound;{{ backtest.final_equity | default(0) | commaf }}</span></span>
+        <span>Avg Win: <span class="metric-card__value--positive">&pound;{{ backtest.avg_win | default(0) | commaf }}</span></span>
+        <span>Avg Loss: <span class="metric-card__value--negative">&pound;{{ backtest.avg_loss | default(0) | commaf }}</span></span>
+      </div>
+      {% if summary and summary.survivors > 0 %}
+      <div class="hero-metric-detail" style="margin-top: var(--space-xs);">
+        <span>Regime: <span class="pill pill--{{ current_regime | lower }}">{{ current_regime }}</span></span>
+        <span>Survivors: {{ survivor_count_selected }} / {{ survivor_count_total }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ── Below-fold: equity curves ── #}
+{% if equity_curves %}
+<div class="content">
+  <div class="card">
+    <h3 class="card__title">Equity Curve</h3>
+    <div class="equity-gallery">
+      {% for ec in equity_curves %}
+      <div class="equity-gallery__item">
+        <img src="/files/{{ ec.path }}" alt="Equity curve — {{ ec.mode }}" loading="lazy" />
+        <div class="equity-gallery__label">{{ ec.mode | upper }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% elif has_data %}
+{# ── No backtest_metrics.json yet, but other data exists ── #}
+<section class="hero">
+  <aside class="hero__rail" aria-hidden="true">
+    <a class="hero__rail-icon" href="/portfolio/" aria-label="Portfolio grid">
+      <span></span><span></span><span></span><span></span>
+    </a>
+    <span class="hero__rail-label">ML.TRADE&nbsp;·&nbsp;EDITION&nbsp;01</span>
+  </aside>
+  <div class="hero__panel hero__panel--gradient">
+    <p class="eyebrow">ML.TRADE / 2026</p>
+    <h1 class="headline">
+      <span class="headline__mark">ML</span><span class="headline__word">.TRADE</span>
+    </h1>
+    <p class="subcopy">
+      Tournament-selected LSTM + RF + XGBoost ensemble, gated by HMM regime
+      and optional sentiment signals. DSR-adjusted, walk-forward validated.
+    </p>
+  </div>
+  <div class="hero__panel hero__panel--dark">
+    <div class="hero__meta">
+      <p class="eyebrow">Status</p>
+      {% if summary and summary.survivors > 0 %}
+      <p class="hero__meta-line">
+        Survivors: <strong>{{ survivor_count_selected }}</strong> / {{ survivor_count_total }} groups
+      </p>
+      <p class="hero__meta-line">
+        Avg Val Sharpe: <strong>{{ '%.3f'|format(summary.avg_val_sharpe) }}</strong>
+      </p>
+      {% endif %}
+      <p class="hero__meta-line hero__meta-line--muted" style="margin-top: var(--space-lg);">
+        No backtest metrics yet. Rerun the pipeline to generate
+        <code>backtest_metrics.json</code>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="content">
+  <div class="card">
+    <h3 class="card__title">Pipeline Summary</h3>
+    {% if summary and summary.survivors > 0 %}
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="metric-card__label">Avg Val Sharpe</div>
+        <div class="metric-card__value {{ 'metric-card__value--positive' if summary.avg_val_sharpe > 0 else 'metric-card__value--negative' }}">
+          {{ '%.3f'|format(summary.avg_val_sharpe) }}
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__label">Avg Val Accuracy</div>
+        <div class="metric-card__value">{{ '%.2f'|format(summary.avg_val_accuracy * 100) }}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__label">Survivors</div>
+        <div class="metric-card__value">{{ summary.survivors }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if equity_curves %}
+    <div class="equity-gallery" style="margin-top: var(--space-lg);">
+      {% for ec in equity_curves %}
+      <div class="equity-gallery__item">
+        <img src="/files/{{ ec.path }}" alt="Equity curve — {{ ec.mode }}" loading="lazy" />
+        <div class="equity-gallery__label">{{ ec.mode | upper }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <p class="muted" style="margin-top: var(--space-lg);">
+      Backtest metrics file not found. Rerun the pipeline to generate
+      <code>results/backtest_metrics.json</code> for the full metrics dashboard.
+      Meanwhile, see the <a href="/portfolio/" style="color: var(--color-juo-accent);">Portfolio</a>
+      page for tournament-level metrics.
+    </p>
+  </div>
+</div>
+
+{% else %}
+{# ── No data at all ── #}
+<section class="hero">
+  <aside class="hero__rail" aria-hidden="true">
+    <a class="hero__rail-icon" href="/portfolio/" aria-label="Portfolio grid">
+      <span></span><span></span><span></span><span></span>
+    </a>
+    <span class="hero__rail-label">ML.TRADE&nbsp;·&nbsp;EDITION&nbsp;01</span>
+  </aside>
+  <div class="hero__panel hero__panel--gradient">
+    <p class="eyebrow">ML.TRADE / 2026</p>
+    <h1 class="headline">
+      <span class="headline__mark">ML</span><span class="headline__word">.TRADE</span>
+    </h1>
+    <p class="subcopy">
+      Tournament-selected LSTM + RF + XGBoost ensemble, gated by HMM regime
+      and optional sentiment signals. DSR-adjusted, walk-forward validated.
+    </p>
+  </div>
+  <div class="hero__panel hero__panel--dark">
+    <div class="hero__meta">
+      <p class="eyebrow">Status</p>
+      <p class="hero__meta-line hero__meta-line--muted">
+        No pipeline results yet. Run the training pipeline to populate this dashboard.
+      </p>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ── Secondary: Regime Status (shared across all branches) ── #}
+{% if regime_dist %}
+<div class="content">
+  <h2 class="section-heading">Regime Status</h2>
+  <div class="metric-cards">
+    <div class="metric-card">
+      <div class="metric-card__label">Current Regime</div>
+      <div class="metric-card__value">
+        <span class="pill pill--{{ current_regime | lower }}">{{ current_regime }}</span>
+      </div>
+    </div>
+    {% for label, pct in regime_dist.items() %}
+    <div class="metric-card">
+      <div class="metric-card__label">{{ label }} Regime</div>
+      <div class="metric-card__value">{{ '%.1f'|format(pct) }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="regime-timeline" style="height: 8px; border-radius: 2px; margin-top: var(--space-md);">
+    {% for label, pct in regime_dist.items() %}
+    <div class="regime-timeline__segment regime-timeline__segment--{{ label | lower }}"
+         style="flex: {{ pct }};"
+         title="{{ label }}: {{ pct }}%"></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Sweep Experiments Table ── #}
+{% if sweep_metrics %}
+<div class="content">
+  <div class="card">
+    <h3 class="card__title">Sweep Experiments</h3>
+    <div style="overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Config</th>
+            <th>Return (%)</th>
+            <th>Sharpe</th>
+            <th>Max DD (%)</th>
+            <th>Win Rate (%)</th>
+            <th>Trades</th>
+            <th>Reward:Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sw in sweep_metrics %}
+          <tr>
+            <td>{{ sw.config | default('—') }}</td>
+            <td class="num {{ 'pos' if sw.total_return_pct | default(0) >= 0 else 'neg' }}">
+              {{ '%+.2f'|format(sw.total_return_pct | default(0)) }}
+            </td>
+            <td class="num {{ 'pos' if sw.sharpe_ratio | default(0) > 0 else 'neg' }}">
+              {{ '%.3f'|format(sw.sharpe_ratio | default(0)) }}
+            </td>
+            <td class="num neg">{{ '%.2f'|format(sw.max_drawdown_pct | default(0)) }}</td>
+            <td class="num">{{ '%.1f'|format(sw.win_rate_pct | default(0)) }}</td>
+            <td class="num">{{ sw.total_trades | default(0) }}</td>
+            <td class="num">{{ '%.2f'|format(sw.reward_risk | default(0)) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── Sweep equity curves ── #}
+{% if sweep_curves %}
+<div class="content">
+  <div class="card">
+    <h3 class="card__title">Sweep Equity Curves</h3>
+    <div class="equity-gallery">
+      {% for ec in sweep_curves %}
+      <div class="equity-gallery__item">
+        <img src="/files/{{ ec.path }}" alt="Sweep equity curve — {{ ec.mode }}" loading="lazy" />
+        <div class="equity-gallery__label">{{ ec.mode | upper }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

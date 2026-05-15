@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Regime — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+  <div class="section-hero__inner">
+    <h1 class="section-hero__title">Regime</h1>
+    <p class="section-hero__subtitle">
+      Hidden Markov Model market regime detection — BULL, BEAR, and CRISIS classification.
+    </p>
+  </div>
+</section>
+
+<div class="content">
+
+  {% if regime_dist %}
+  {# ── Top row: Hero regime card + live distribution stats ── #}
+  <div class="regime-top">
+    <div class="regime-hero-card regime-hero-card--{{ current_regime | lower }}">
+      <div class="regime-hero-card__label">Current Regime</div>
+      <div class="regime-hero-card__value">{{ current_regime }}</div>
+      <div class="regime-hero-card__meta">
+        <span><strong>{{ n_regime_samples }}</strong> timesteps</span>
+        <span><strong>{{ timeline_segments | length }}</strong> segments</span>
+        <span><strong>{{ n_transitions }}</strong> transitions</span>
+      </div>
+    </div>
+
+    <div class="regime-stats">
+      <div class="regime-stats__title">Distribution</div>
+      {% for label, pct in regime_dist.items() %}
+      <div class="regime-stat">
+        <div class="regime-stat__header">
+          <span class="regime-stat__label regime-stat__label--{{ label | lower }}">{{ label }}</span>
+          <span class="regime-stat__pct">{{ '%.1f'|format(pct) }}%</span>
+        </div>
+        <div class="regime-stat__bar">
+          <div class="regime-stat__bar-fill regime-stat__bar-fill--{{ label | lower }}"
+               style="width: {{ pct }}%;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Charts grid: balanced donut + breakdown ── #}
+  <div class="regime-grid">
+    <div class="card regime-card">
+      <h3 class="card__title">Distribution</h3>
+      <div id="chart-regime-donut" class="chart-container" style="height: 420px;"></div>
+      <script type="application/json" id="regime-dist-data">{{ regime_dist | tojson }}</script>
+    </div>
+
+    <div class="card regime-card">
+      <h3 class="card__title">Regime Breakdown</h3>
+      <div class="regime-breakdown">
+        <div class="regime-breakdown-summary">
+          <div class="regime-breakdown-metric">
+            <div class="regime-breakdown-metric__label">Total Transitions</div>
+            <div class="regime-breakdown-metric__value">{{ n_transitions }}</div>
+          </div>
+          <div class="regime-breakdown-metric">
+            <div class="regime-breakdown-metric__label">Longest Run</div>
+            <div class="regime-breakdown-metric__value">{{ longest_run }}</div>
+          </div>
+          <div class="regime-breakdown-metric">
+            <div class="regime-breakdown-metric__label">Segments</div>
+            <div class="regime-breakdown-metric__value">{{ timeline_segments | length }}</div>
+          </div>
+        </div>
+
+        {% if segment_stats %}
+        <div class="regime-breakdown-divider"></div>
+        <div class="regime-breakdown-table">
+          <div class="regime-breakdown-row regime-breakdown-row--head">
+            <span>Regime</span>
+            <span>Segments</span>
+            <span>Avg&nbsp;Length</span>
+            <span>Longest</span>
+          </div>
+          {% for label, data in segment_stats.items() %}
+          <div class="regime-breakdown-row regime-breakdown-row--{{ label | lower }}">
+            <span class="regime-breakdown-row__label">
+              <span class="regime-legend__dot regime-legend__dot--{{ label | lower }}"></span>
+              {{ label }}
+            </span>
+            <span>{{ data.count }}</span>
+            <span>{{ '%.1f'|format(data.avg) }}</span>
+            <span>{{ data.longest }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Full-width timeline ── #}
+  <div class="card">
+    <div class="regime-timeline-header">
+      <h3 class="card__title" style="margin: 0; padding: 0; border: none;">Timeline</h3>
+      <div class="regime-legend">
+        {% for label in regime_dist.keys() %}
+        <span class="regime-legend__item">
+          <span class="regime-legend__dot regime-legend__dot--{{ label | lower }}"></span> {{ label }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+    {% if timeline_segments %}
+    <div class="regime-timeline regime-timeline--tall">
+      {% for seg in timeline_segments %}
+      <div class="regime-timeline__segment regime-timeline__segment--{{ seg.label | lower }}"
+           style="flex: {{ seg.count }};"
+           title="{{ seg.label }} · {{ seg.count }} timesteps"></div>
+      {% endfor %}
+    </div>
+    <div class="regime-timeline-axis">
+      <span>0</span>
+      <span>{{ (n_regime_samples // 4) }}</span>
+      <span>{{ (n_regime_samples // 2) }}</span>
+      <span>{{ ((n_regime_samples * 3) // 4) }}</span>
+      <span>{{ n_regime_samples }}</span>
+    </div>
+    <p class="muted" style="margin-top: var(--space-sm); font-size: 12px;">
+      {{ n_regime_samples }} timesteps across {{ timeline_segments | length }} segments
+    </p>
+    {% else %}
+    <p class="muted">No regime timeline data available.</p>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <h2>No regime data</h2>
+    <p>Run the pipeline with regime detection to populate this page.</p>
+    <p class="muted">Expected file: <code>results/portfolio_regime.npy</code></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var node = document.getElementById('regime-dist-data');
+  if (!node) return;
+  var data;
+  try { data = JSON.parse(node.textContent); } catch (e) { return; }
+  if (data && window.DashboardCharts) {
+    window.DashboardCharts.drawRegimeDonut('chart-regime-donut', data);
+  }
+})();
+</script>
+{% endblock %}

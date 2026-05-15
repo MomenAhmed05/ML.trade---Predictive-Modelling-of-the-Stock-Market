@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}API — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+  <div class="section-hero__inner">
+    <h1 class="section-hero__title">API</h1>
+    <p class="section-hero__subtitle">
+      JSON endpoints for programmatic access to pipeline results and statistics.
+    </p>
+  </div>
+</section>
+
+<div class="content">
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/</span>
+    <span class="api-endpoint__desc">This endpoint index</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/tournament</span>
+    <span class="api-endpoint__desc">Tournament leaderboard data</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/manifest</span>
+    <span class="api-endpoint__desc">Master manifest with per-group metadata</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/regime</span>
+    <span class="api-endpoint__desc">Regime series, distribution, current state</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/portfolio</span>
+    <span class="api-endpoint__desc">Portfolio summary (avg Sharpe, accuracy, trades)</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/equity-curves</span>
+    <span class="api-endpoint__desc">List equity curve image paths</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/comparison</span>
+    <span class="api-endpoint__desc">LSTM vs MTL comparison data</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/sweep-curves</span>
+    <span class="api-endpoint__desc">Sweep experiment equity curve paths</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/api/health</span>
+    <span class="api-endpoint__desc">Health check</span>
+  </div>
+  <div class="api-endpoint">
+    <span class="api-endpoint__method">GET</span>
+    <span class="api-endpoint__path">/files/&lt;path&gt;</span>
+    <span class="api-endpoint__desc">Serve files from results/ or models/ (path-traversal safe)</span>
+  </div>
+
+  <div class="card" style="margin-top: var(--space-xl);">
+    <h3 class="card__title">Usage</h3>
+    <p style="font-family: var(--font-mono); font-size: 12px; color: var(--color-muted-light); line-height: 1.8;">
+      curl http://localhost:5000/api/portfolio<br/>
+      curl http://localhost:5000/api/regime<br/>
+      curl http://localhost:5000/api/tournament<br/>
+      curl http://localhost:5000/files/results/equity_curve_portfolio.png
+    </p>
+  </div>
+</div>
+{% endblock %}

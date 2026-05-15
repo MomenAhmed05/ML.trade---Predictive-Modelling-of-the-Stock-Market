@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Tournament — ML.TRADE{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}" />
+{% endblock %}
+
+{% block content %}
+<section class="tournament-hero">
+  <div class="tournament-hero__inner">
+    <h1 class="tournament-hero__title">Tournament</h1>
+    <p class="tournament-hero__subtitle">
+      {{ total_count }} groups trained. {{ selected_count }} survived DSR-adjusted threshold.
+    </p>
+  </div>
+</section>
+
+{% if rows %}
+<div class="filter-bar">
+  <label class="filter-bar__toggle">
+    <input type="checkbox" id="selected-only" />
+    <span>Selected only</span>
+  </label>
+  <input
+    type="search"
+    id="ticker-search"
+    class="filter-bar__search"
+    placeholder="Filter by ticker (e.g. TSLA)"
+    autocomplete="off"
+  />
+  <span class="filter-bar__meta" id="row-count-display">{{ rows|length }} groups</span>
+</div>
+
+<div class="tournament-table-wrap">
+  <table class="tournament-table" id="tournament-table">
+    <thead>
+      <tr>
+        <th data-sort="num" data-key="group_id">Group<span class="sort-ind"></span></th>
+        <th data-sort="str" data-key="tickers">Tickers<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="val_accuracy">Val Acc<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="val_sharpe">Val Sharpe<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="overall_accuracy">Overall Acc<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="trades_55">Trades (55%)<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="acc_55">Acc (55%)<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="trades_65">Trades (65%)<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="acc_65">Acc (65%)<span class="sort-ind"></span></th>
+        <th data-sort="num" data-key="ticker_positive_ratio">Positive Ratio<span class="sort-ind"></span></th>
+        <th data-sort="str" data-key="selected">Selected<span class="sort-ind"></span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr
+        class="tournament-row{% if r.selected %} selected-row{% endif %}"
+        data-group-id="{{ r.group_id }}"
+        data-tickers="{{ r.tickers|join(',')|lower }}"
+        data-selected="{{ '1' if r.selected else '0' }}"
+        data-href="{{ url_for('tournament.detail', group_id=r.group_id) }}"
+      >
+        <td class="num" data-val="{{ r.group_id }}">{{ r.group_id }}</td>
+        <td class="tickers-cell" data-val="{{ r.tickers|join(',') }}">
+          <span class="ticker-pills">
+            {% for t in r.tickers %}<span class="pill-mini">{{ t }}</span>{% endfor %}
+          </span>
+        </td>
+        <td class="num" data-val="{{ r.val_accuracy if r.val_accuracy is not none else '' }}">
+          {% if r.val_accuracy is not none %}{{ '%.4f'|format(r.val_accuracy) }}{% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.val_sharpe if r.val_sharpe is not none else '' }}">
+          {% if r.val_sharpe is not none %}
+            <span class="{% if r.val_sharpe >= 0 %}pos{% else %}neg{% endif %}">{{ '%.3f'|format(r.val_sharpe) }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.overall_accuracy if r.overall_accuracy is not none else '' }}">
+          {% if r.overall_accuracy is not none %}{{ '%.4f'|format(r.overall_accuracy) }}{% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.trades_55 if r.trades_55 is not none else '' }}">
+          {% if r.trades_55 is not none %}{{ r.trades_55|int }}{% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.acc_55 if r.acc_55 is not none else '' }}">
+          {% if r.acc_55 is not none %}
+            <span class="winrate-bar">
+              <span class="winrate-bar__fill" style="width: {{ (r.acc_55 * 100)|round(1) }}%;"></span>
+              <span class="winrate-bar__label">{{ '%.1f'|format(r.acc_55 * 100) }}%</span>
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.trades_65 if r.trades_65 is not none else '' }}">
+          {% if r.trades_65 is not none %}{{ r.trades_65|int }}{% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.acc_65 if r.acc_65 is not none else '' }}">
+          {% if r.acc_65 is not none %}
+            <span class="winrate-bar">
+              <span class="winrate-bar__fill" style="width: {{ (r.acc_65 * 100)|round(1) }}%;"></span>
+              <span class="winrate-bar__label">{{ '%.1f'|format(r.acc_65 * 100) }}%</span>
+            </span>
+          {% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ r.ticker_positive_ratio if r.ticker_positive_ratio is not none else '' }}">
+          {% if r.ticker_positive_ratio is not none %}{{ '%.2f'|format(r.ticker_positive_ratio) }}{% else %}—{% endif %}
+        </td>
+        <td class="num" data-val="{{ '1' if r.selected else '0' }}">
+          {% if r.selected %}<span class="badge-selected">Selected</span>{% else %}<span class="badge-muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="tournament-empty">
+  <p>No tournament data yet.</p>
+  <p class="muted">Once <code>results/group_tournament.csv</code> is written, the leaderboard will appear here.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var table = document.getElementById('tournament-table');
+  if (!table) return;
+
+  var tbody = table.querySelector('tbody');
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr.tournament-row'));
+  var headers = table.querySelectorAll('th[data-sort]');
+  var searchInput = document.getElementById('ticker-search');
+  var selectedOnly = document.getElementById('selected-only');
+  var countDisplay = document.getElementById('row-count-display');
+
+  rows.forEach(function (tr) {
+    tr.addEventListener('click', function (e) {
+      if (e.target && e.target.tagName === 'A') return;
+      var href = tr.getAttribute('data-href');
+      if (href) window.location.href = href;
+    });
+  });
+
+  function applyFilter() {
+    var q = (searchInput && searchInput.value ? searchInput.value : '').trim().toLowerCase();
+    var selOnly = selectedOnly && selectedOnly.checked;
+    var visible = 0;
+    rows.forEach(function (tr) {
+      var tickers = tr.getAttribute('data-tickers') || '';
+      var isSel = tr.getAttribute('data-selected') === '1';
+      var show = true;
+      if (q && tickers.indexOf(q) === -1) show = false;
+      if (selOnly && !isSel) show = false;
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    if (countDisplay) countDisplay.textContent = visible + ' group' + (visible === 1 ? '' : 's');
+  }
+
+  if (searchInput) searchInput.addEventListener('input', applyFilter);
+  if (selectedOnly) selectedOnly.addEventListener('change', applyFilter);
+
+  var sortState = { key: null, dir: 1 };
+
+  function sortBy(th) {
+    var colIdx = Array.prototype.indexOf.call(th.parentNode.children, th);
+    var type = th.getAttribute('data-sort');
+    var key = th.getAttribute('data-key');
+    if (sortState.key === key) {
+      sortState.dir = -sortState.dir;
+    } else {
+      sortState.key = key;
+      sortState.dir = 1;
+    }
+    var dir = sortState.dir;
+
+    var sorted = rows.slice().sort(function (a, b) {
+      var av = a.children[colIdx].getAttribute('data-val') || '';
+      var bv = b.children[colIdx].getAttribute('data-val') || '';
+      if (type === 'num') {
+        var af = av === '' ? -Infinity : parseFloat(av);
+        var bf = bv === '' ? -Infinity : parseFloat(bv);
+        if (isNaN(af)) af = -Infinity;
+        if (isNaN(bf)) bf = -Infinity;
+        return (af - bf) * dir;
+      }
+      return av.localeCompare(bv) * dir;
+    });
+
+    sorted.forEach(function (tr) { tbody.appendChild(tr); });
+
+    headers.forEach(function (h) { h.classList.remove('sorted-asc', 'sorted-desc'); });
+    th.classList.add(dir === 1 ? 'sorted-asc' : 'sorted-desc');
+  }
+
+  headers.forEach(function (th) {
+    th.addEventListener('click', function () { sortBy(th); });
+  });
+})();
+</script>
+{% endblock %}

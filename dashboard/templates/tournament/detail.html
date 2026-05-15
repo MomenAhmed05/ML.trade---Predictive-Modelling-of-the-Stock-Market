@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Group {{ group_id }} — Tournament — ML.TRADE{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tournament.css') }}" />
+{% endblock %}
+
+{% block content %}
+<section class="tournament-hero tournament-hero--detail">
+  <div class="tournament-hero__inner">
+    <a class="tournament-hero__back" href="{{ url_for('tournament.index') }}">&larr; Back to leaderboard</a>
+    <h1 class="tournament-hero__title">Group {{ group_id }}</h1>
+    {% if tickers %}
+      <div class="ticker-pills ticker-pills--hero">
+        {% for t in tickers %}<span class="pill-mini pill-mini--hero">{{ t }}</span>{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if not_found %}
+<div class="tournament-empty">
+  <h2>Group {{ group_id }} not found</h2>
+  <p class="muted">No tournament row, manifest entry, or saved model exists for this group.</p>
+  <p><a href="{{ url_for('tournament.index') }}">Return to leaderboard</a></p>
+</div>
+{% else %}
+
+<div class="metric-cards">
+  <div class="metric-card">
+    <div class="metric-card__label">Val Sharpe</div>
+    <div class="metric-card__value">
+      {% if row and row.val_sharpe is not none %}{{ '%.3f'|format(row.val_sharpe) }}
+      {% elif manifest and manifest.val_sharpe is defined %}{{ '%.3f'|format(manifest.val_sharpe) }}
+      {% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-card__label">Val Accuracy</div>
+    <div class="metric-card__value">
+      {% if row and row.val_accuracy is not none %}{{ '%.4f'|format(row.val_accuracy) }}
+      {% elif manifest and manifest.val_accuracy is defined %}{{ '%.4f'|format(manifest.val_accuracy) }}
+      {% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-card__label">Val Trades</div>
+    <div class="metric-card__value">
+      {% if manifest and manifest.val_trades is defined %}{{ manifest.val_trades }}
+      {% elif row and row.trades_55 is not none %}{{ row.trades_55|int }}
+      {% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-card__label">Positive Ratio</div>
+    <div class="metric-card__value">
+      {% if row and row.ticker_positive_ratio is not none %}{{ '%.2f'|format(row.ticker_positive_ratio) }}
+      {% elif manifest and manifest.val_ticker_positive_ratio is defined %}{{ '%.2f'|format(manifest.val_ticker_positive_ratio) }}
+      {% else %}—{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-grid__left">
+    {% if history and (history.accuracy or history.val_accuracy or history.loss or history.val_loss) %}
+      <div class="card chart-card">
+        <h3 class="chart-card__title">Accuracy</h3>
+        <div id="chart-accuracy" class="chart-container"></div>
+      </div>
+      <div class="card chart-card">
+        <h3 class="chart-card__title">Loss</h3>
+        <div id="chart-loss" class="chart-container"></div>
+      </div>
+      <script type="application/json" id="training-history">{{ history|tojson }}</script>
+    {% else %}
+      <div class="card chart-card">
+        <h3 class="chart-card__title">Training history</h3>
+        <p class="muted">Training history unavailable.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="detail-grid__right">
+    <div class="card">
+      <h3 class="chart-card__title">Confusion matrix</h3>
+      <img
+        class="confusion-img"
+        src="/files/models/group_{{ group_id }}/confusion_matrix.png"
+        alt="Confusion matrix for group {{ group_id }}"
+        onerror="this.style.display='none'; var el=document.getElementById('cm-fallback-{{ group_id }}'); if (el) el.style.display='block';"
+      />
+      <p id="cm-fallback-{{ group_id }}" class="muted" style="display:none;">Confusion matrix image unavailable.</p>
+    </div>
+  </div>
+</div>
+
+{% if window_sharpes %}
+<div class="card window-table-card">
+  <h3 class="chart-card__title">Walk-forward windows</h3>
+  <table class="window-table">
+    <thead>
+      <tr>
+        <th>Window</th>
+        <th>Sharpe</th>
+        {% if window_trades %}<th>Trades</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in window_sharpes %}
+      <tr>
+        <td class="num">{{ loop.index }}</td>
+        <td class="num">
+          <span class="{% if s >= 0 %}pos{% else %}neg{% endif %}">{{ '%.3f'|format(s) }}</span>
+        </td>
+        {% if window_trades %}
+          <td class="num">{{ window_trades[loop.index0] if loop.index0 < window_trades|length else '—' }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var node = document.getElementById('training-history');
+  if (!node) return;
+  var data;
+  try { data = JSON.parse(node.textContent); } catch (e) { return; }
+  if (!data) return;
+
+  function buildEpochs(series) {
+    return (series || []).map(function (_, i) { return i + 1; });
+  }
+
+  function drawAccuracy() {
+    var acc = data.accuracy || [];
+    var val = data.val_accuracy || [];
+    var traces = [];
+    if (acc.length) {
+      traces.push({ x: buildEpochs(acc), y: acc, mode: 'lines+markers', name: 'accuracy', line: { color: '#8B1A1A', width: 2 } });
+    }
+    if (val.length) {
+      traces.push({ x: buildEpochs(val), y: val, mode: 'lines+markers', name: 'val_accuracy', line: { color: '#131318', width: 2, dash: 'dot' } });
+    }
+    var layout = {
+      margin: { t: 8, r: 16, b: 36, l: 44 },
+      height: 260,
+      xaxis: { title: 'Epoch' },
+      yaxis: { title: 'Accuracy' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      legend: { orientation: 'h' }
+    };
+    var el = document.getElementById('chart-accuracy');
+    if (!el || !traces.length) return;
+    if (window.DashboardCharts && typeof window.DashboardCharts.render === 'function') {
+      window.DashboardCharts.render(el, traces, layout);
+    } else if (window.Plotly) {
+      window.Plotly.newPlot(el, traces, layout, { displayModeBar: false, responsive: true });
+    }
+  }
+
+  function drawLoss() {
+    var loss = data.loss || [];
+    var vloss = data.val_loss || [];
+    var traces = [];
+    if (loss.length) {
+      traces.push({ x: buildEpochs(loss), y: loss, mode: 'lines+markers', name: 'loss', line: { color: '#B22222', width: 2 } });
+    }
+    if (vloss.length) {
+      traces.push({ x: buildEpochs(vloss), y: vloss, mode: 'lines+markers', name: 'val_loss', line: { color: '#131318', width: 2, dash: 'dot' } });
+    }
+    var layout = {
+      margin: { t: 8, r: 16, b: 36, l: 44 },
+      height: 260,
+      xaxis: { title: 'Epoch' },
+      yaxis: { title: 'Loss' },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      legend: { orientation: 'h' }
+    };
+    var el = document.getElementById('chart-loss');
+    if (!el || !traces.length) return;
+    if (window.DashboardCharts && typeof window.DashboardCharts.render === 'function') {
+      window.DashboardCharts.render(el, traces, layout);
+    } else if (window.Plotly) {
+      window.Plotly.newPlot(el, traces, layout, { displayModeBar: false, responsive: true });
+    }
+  }
+
+  drawAccuracy();
+  drawLoss();
+})();
+</script>
+{% endblock %}

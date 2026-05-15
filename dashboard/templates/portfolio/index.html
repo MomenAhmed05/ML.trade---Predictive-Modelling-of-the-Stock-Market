@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Portfolio — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+  <div class="section-hero__inner">
+    <h1 class="section-hero__title">Portfolio</h1>
+    <p class="section-hero__subtitle">
+      Backtest equity curves, performance metrics, and sweep experiment results.
+    </p>
+  </div>
+</section>
+
+<div class="content">
+  {% if summary and summary.survivors > 0 %}
+  <div class="metric-cards">
+    <div class="metric-card">
+      <div class="metric-card__label">Avg Val Sharpe</div>
+      <div class="metric-card__value {{ 'metric-card__value--positive' if summary.avg_val_sharpe > 0 else 'metric-card__value--negative' }}">
+        {{ '%.3f'|format(summary.avg_val_sharpe) }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__label">Avg Val Accuracy</div>
+      <div class="metric-card__value">
+        {{ '%.2f'|format(summary.avg_val_accuracy * 100) }}%
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__label">Total Trades</div>
+      <div class="metric-card__value">{{ summary.total_trades }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__label">Survivors</div>
+      <div class="metric-card__value">{{ summary.survivors }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if regime_dist %}
+  <div class="card">
+    <h3 class="card__title">Regime Distribution</h3>
+    <div class="regime-timeline" style="height: 12px; border-radius: 2px;">
+      {% for label, pct in regime_dist.items() %}
+      <div class="regime-timeline__segment regime-timeline__segment--{{ label | lower }}"
+           style="flex: {{ pct }};"
+           title="{{ label }}: {{ pct }}%"></div>
+      {% endfor %}
+    </div>
+    <div style="display: flex; gap: var(--space-lg); margin-top: var(--space-md);">
+      {% for label, pct in regime_dist.items() %}
+      <span class="pill pill--{{ label | lower }}">{{ label }} {{ '%.1f'|format(pct) }}%</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if equity_curves %}
+  <div class="card">
+    <h3 class="card__title">Equity Curves</h3>
+    <div class="equity-gallery">
+      {% for ec in equity_curves %}
+      <div class="equity-gallery__item">
+        <img src="/files/{{ ec.path }}" alt="Equity curve — {{ ec.mode }}" loading="lazy" />
+        <div class="equity-gallery__label">{{ ec.mode | upper }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if sweep_curves %}
+  <div class="card">
+    <h3 class="card__title">Sweep Experiments</h3>
+    <div class="equity-gallery">
+      {% for ec in sweep_curves %}
+      <div class="equity-gallery__item">
+        <img src="/files/{{ ec.path }}" alt="Sweep equity curve — {{ ec.mode }}" loading="lazy" />
+        <div class="equity-gallery__label">{{ ec.mode | upper }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if manifest_rows %}
+  <div class="card">
+    <h3 class="card__title">Manifest Entries</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Group</th>
+          <th>Stocks</th>
+          <th>Val Sharpe</th>
+          <th>Val Accuracy</th>
+          <th>Val Trades</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in manifest_rows %}
+        <tr>
+          <td class="num">{{ entry.group_id }}</td>
+          <td>{{ entry.stocks }}</td>
+          <td class="num {{ 'pos' if entry.val_sharpe >= 0 else 'neg' }}">
+            {{ '%.3f'|format(entry.val_sharpe | default(0)) }}
+          </td>
+          <td class="num">{{ '%.4f'|format(entry.val_accuracy | default(0)) }}</td>
+          <td class="num">{{ entry.val_trades | default(0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if not equity_curves and not sweep_curves and not manifest_rows %}
+  <div class="empty-state">
+    <h2>No portfolio data</h2>
+    <p>Run the backtest pipeline to generate equity curves and metrics.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

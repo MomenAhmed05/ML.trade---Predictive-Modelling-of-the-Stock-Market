@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Inspector — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+  <div class="section-hero__inner">
+    <h1 class="section-hero__title">Inspector</h1>
+    <p class="section-hero__subtitle">
+      Browse raw OHLCV hourly data. Select a letter group and ticker to visualize.
+    </p>
+  </div>
+</section>
+
+<div class="content">
+  <form class="inspector-controls" method="get" action="{{ url_for('inspector.index') }}">
+    <label for="group">Group</label>
+    <select name="group" id="group" onchange="this.form.submit()">
+      <option value="">— Select —</option>
+      {% for g in letter_groups %}
+      <option value="{{ g }}" {{ 'selected' if g == selected_group }}>{{ g }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="ticker">Ticker</label>
+    <select name="ticker" id="ticker" onchange="this.form.submit()">
+      <option value="">— Select —</option>
+      {% for t in tickers %}
+      <option value="{{ t }}" {{ 'selected' if t == selected_ticker }}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if ohlcv_json %}
+  <div class="card">
+    <h3 class="card__title">{{ selected_ticker | upper }} — {{ selected_group }}</h3>
+    <div id="chart-ohlcv" class="chart-container" style="height: 420px;"></div>
+    <script type="application/json" id="ohlcv-data">{{ ohlcv_json | tojson }}</script>
+  </div>
+  {% elif selected_group and selected_ticker %}
+  <div class="empty-state">
+    <h2>No data for {{ selected_ticker }}</h2>
+    <p class="muted">The selected ticker has no available OHLCV data in this letter group.</p>
+  </div>
+  {% elif selected_group and not tickers %}
+  <div class="empty-state">
+    <h2>Empty letter group</h2>
+    <p class="muted">No tickers found in group {{ selected_group }}.</p>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h2>Select a ticker</h2>
+    <p>Choose a letter group and ticker above to view hourly OHLCV candlestick data.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var node = document.getElementById('ohlcv-data');
+  if (!node) return;
+  var data;
+  try { data = JSON.parse(node.textContent); } catch (e) { return; }
+  if (data && window.DashboardCharts) {
+    window.DashboardCharts.drawOHLCV('chart-ohlcv', data);
+  }
+})();
+</script>
+{% endblock %}

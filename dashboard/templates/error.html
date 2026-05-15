@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__panel hero__panel--gradient">
+    <p class="eyebrow">ML.TRADE / ERROR</p>
+    <h1 class="headline">{{ code }}</h1>
+    <p class="subcopy">{{ message }}</p>
+  </div>
+  <div class="hero__panel hero__panel--dark">
+    <div class="hero__meta">
+      <p class="eyebrow">Navigation</p>
+      {# Hardcoded paths intentional — url_for may fail if blueprints are broken. #}
+      <p class="hero__meta-line">
+        <a href="/" style="color: var(--color-accent); text-decoration: none;">← Back to Home</a>
+      </p>
+      <p class="hero__meta-line">
+        <a href="/tournament/" style="color: var(--color-accent); text-decoration: none;">Tournament</a>
+      </p>
+      <p class="hero__meta-line">
+        <a href="/portfolio/" style="color: var(--color-accent); text-decoration: none;">Portfolio</a>
+      </p>
+      <p class="hero__meta-line">
+        <a href="/regime/" style="color: var(--color-accent); text-decoration: none;">Regime</a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}ML.TRADE Dashboard{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}" />
+
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% include "_nav.html" %}
+
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "_badge.html" %}
+
+  <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/animations.js') }}" defer></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

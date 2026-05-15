@@ -1,0 +1,24 @@
+{# Top nav #}
+{%- set nav_links = [
+  ("Home", "home.index"),
+  ("Tournament", "tournament.index"),
+  ("Portfolio", "portfolio.index"),
+  ("Regime", "regime.index"),
+  ("Compare", "compare.index"),
+  ("Inspector", "inspector.index"),
+  ("API", "api.index"),
+] -%}
+<nav class="nav">
+  <a class="nav__logo" href="/" aria-label="ML.TRADE home">
+    <span class="nav__logo-mark" aria-hidden="true">ML</span>
+    <span class="nav__logo-word">.TRADE</span>
+  </a>
+  <ul class="nav__links">
+    {%- for label, endpoint in nav_links %}
+      {%- set href = safe_url_for(endpoint) %}
+      <li>
+        <a href="{{ href or '#' }}" class="nav__link{% if not href %} nav__link--disabled{% endif %}">{{ label }}</a>
+      </li>
+    {%- endfor %}
+  </ul>
+</nav>

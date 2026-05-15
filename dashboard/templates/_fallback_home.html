@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}ML.TRADE — Hourly Stock Direction Prediction{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__panel hero__panel--crimson">
+    <p class="eyebrow">ML.TRADE / 2026</p>
+    <h1 class="headline">Hourly Stock<br />Direction Prediction</h1>
+    <p class="subcopy">
+      A tournament-selected ensemble of LSTM, Random Forest, and XGBoost models,
+      gated by macro regime and sentiment signals. No home blueprint registered yet —
+      this placeholder will be replaced once Unit 2 ships.
+    </p>
+  </div>
+  <div class="hero__panel hero__panel--cream">
+    <div class="hero__meta">
+      <p class="eyebrow eyebrow--dark">Status</p>
+      <p class="hero__meta-line">Regime: <span class="pill pill--{{ current_regime | lower }}">{{ current_regime }}</span></p>
+      <p class="hero__meta-line">Survivors: <strong>{{ survivor_count_selected }}</strong> of {{ survivor_count_total }}</p>
+      <p class="hero__meta-line hero__meta-line--muted">Dashboard foundation ready. Awaiting feature blueprints.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

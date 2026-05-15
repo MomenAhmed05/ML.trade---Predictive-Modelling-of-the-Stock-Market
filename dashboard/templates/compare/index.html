@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Compare — ML.TRADE{% endblock %}
+
+{% block content %}
+<section class="section-hero">
+  <div class="section-hero__inner">
+    <h1 class="section-hero__title">Compare</h1>
+    <p class="section-hero__subtitle">
+      LSTM vs Multi-Task Learning — side-by-side performance comparison.
+    </p>
+  </div>
+</section>
+
+<div class="content">
+  {% if comparison_rows %}
+  <div class="compare-split">
+    {% for row in comparison_rows %}
+    <div class="compare-split__panel">
+      <div class="compare-split__panel-title">
+        {% if row.get('model', '') | lower == 'lstm' or row.get('type', '') | lower == 'lstm' or loop.index == 1 %}
+          LSTM
+        {% else %}
+          MTL
+        {% endif %}
+      </div>
+      <table class="data-table">
+        {% for col in comparison_columns %}
+        <tr>
+          <td style="color: var(--color-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;">
+            {{ col }}
+          </td>
+          <td class="num">{{ row.get(col, '—') }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card" style="margin-top: var(--space-lg);">
+    <h3 class="card__title">Full Comparison Table</h3>
+    <div style="overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            {% for col in comparison_columns %}
+            <th>{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in comparison_rows %}
+          <tr>
+            {% for col in comparison_columns %}
+            <td class="num">{{ row.get(col, '—') }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h2>No comparison data</h2>
+    <p>Run the pipeline with <code>--compare</code> to generate LSTM vs MTL comparison.</p>
+    <p class="muted">Expected file: <code>results/comparison.csv</code></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
