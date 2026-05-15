@@ -27,6 +27,7 @@ The system runs as a three-stage pipeline:
 - **TA-Lib** — technical indicator computation
 - **NVIDIA CUDA** — GPU-accelerated training
 - **MAML/Reptile-style meta-learning** (SAML) for regime-adaptive initialization
+- **Flask** — web dashboard for result inspection
 
 ## Performance
 
@@ -47,10 +48,18 @@ The system runs as a three-stage pipeline:
 ### Install
 
 ```bash
-pip install -r requirements_cloud.txt
+pip install -r requirements.txt
+```
+
+For optional FinBERT sentiment analysis:
+
+```bash
+pip install -r requirements_sentiment.txt
 ```
 
 ## Usage
+
+### Pipeline
 
 All modes are invoked through `src/pipeline.py`:
 
@@ -64,6 +73,14 @@ All modes are invoked through `src/pipeline.py`:
 | Multi-task learning | `python src/pipeline.py --mtl` | Shared LSTM trunk + private group heads |
 | Compare LSTM vs MTL | `python src/pipeline.py --compare` | Side-by-side evaluation |
 | Sentiment blending | `python src/pipeline.py --sentiment_alpha` | FinBERT confidence-weighted signal blending |
+
+### Dashboard
+
+```bash
+python -m dashboard.run
+```
+
+A Flask dashboard for inspecting tournament results, regime states, and portfolio equity curves.
 
 ## Project Structure
 
@@ -96,6 +113,14 @@ src/
 ├── llm_guard.py                 LLM safety guard
 ├── sweep_selector.py            Sweep configuration
 ├── __init__.py
+dashboard/
+├── app.py                       Flask app factory
+├── run.py                       Dashboard entry point
+├── config.py                    Path configuration
+├── blueprints/                  Tournament, regime, portfolio, compare, inspector, API
+├── services/                    Data access and statistics
+├── templates/                   Jinja2 HTML templates
+└── static/                      CSS, JS, images
 ```
 
 ## Data
