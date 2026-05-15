@@ -1,0 +1,23 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Data and Models
+data/
+models/
+results/
+*.h5
+*.pkl
+*.json
